@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>裏画面（登録管理）</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Baloo 2', cursive;
+      background: #fff0f5;
+      padding: 2rem;
+      text-align: center;
+    }
+    h2 {
+      color: #d63384;
+    }
+    input, button {
+      font-family: inherit;
+      padding: 0.5rem;
+      margin: 0.5rem;
+      font-size: 1rem;
+    }
+    .section {
+      margin-top: 2rem;
+      border: 2px solid #d63384;
+      border-radius: 1rem;
+      padding: 1rem;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <h2>?? 裏画面（管理者用）</h2>
+
+  <div id="auth-section" class="section">
+    <h3>?? パスコード入力</h3>
+    <input type="password" id="passcode" maxlength="4" placeholder="4桁のパスコード">
+    <button onclick="verifyPasscode()">ログイン</button>
+    <div id="auth-message"></div>
+  </div>
+
+  <div id="main-section" class="section" style="display:none">
+    <h3>?? 登録フォーム</h3>
+    <input id="reg-id" placeholder="QRコード内容">
+    <input id="reg-name" placeholder="名前">
+    <input id="reg-date" type="date">
+    <input id="reg-price" type="number" placeholder="料金">
+    <button onclick="registerEntry()">登録</button>
+    <div id="reg-msg"></div>
+
+    <h3>?? QRコード読み取り</h3>
+    <video id="admin-preview"></video>
+    <div>読み取り結果: <span id="admin-scan-result"></span></div>
+  </div>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script>
+    let passcodeSet = localStorage.getItem('admin_passcode');
+    if (!passcodeSet) {
+      const newCode = prompt('初期パスコードを設定してください（4桁）');
+      if (newCode && newCode.length === 4) {
+        localStorage.setItem('admin_passcode', newCode);
+        passcodeSet = newCode;
+      }
+    }
+
+    function verifyPasscode() {
+      const input = document.getElementById('passcode').value;
+      const correct = localStorage.getItem('admin_passcode');
+      if (input === correct) {
+        document.getElementById('auth-section').style.display = 'none';
+        document.getElementById('main-section').style.display = 'block';
+        startAdminScanner();
+      } else {
+        document.getElementById('auth-message').textContent = 'パスコードが違います';
+      }
+    }
+
+    function registerEntry() {
+      const id = document.getElementById('reg-id').value.trim();
+      const name = document.getElementById('reg-name').value.trim();
+      const date = document.getElementById('reg-date').value;
+      const price = document.getElementById('reg-price').value;
+
+      if (!id || !name || !date || !price) {
+        document.getElementById('reg-msg').textContent = 'すべての項目を入力してください';
+        return;
+      }
+
+      const entries = JSON.parse(localStorage.getItem('entries') || '{}');
+      entries[id] = { name, date, price };
+      localStorage.setItem('entries', JSON.stringify(entries));
+      document.getElementById('reg-msg').textContent = '登録しました';
+    }
+
+    function startAdminScanner() {
+      const adminQr = new Html5Qrcode("admin-preview");
+      adminQr.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 200 },
+        message => {
+          document.getElementById('admin-scan-result').textContent = message;
+          document.getElementById('reg-id').value = message;
+        },
+        err => {}
+      );
+    }
+  </script>
+</body>
+</html>
